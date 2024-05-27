@@ -2,6 +2,7 @@ import fitz  # PyMuPDF
 from PIL import Image
 import os
 
+
 def extract_blocks_as_images(pdf_path, output_folder, high_quality=True):
     doc = fitz.open(pdf_path)
     zoom = 2 if high_quality else 1  # 고화질을 위한 확대 설정
