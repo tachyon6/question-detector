@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
 from PIL import Image
+import os
 
 def extract_blocks_as_images(pdf_path, output_folder, high_quality=True):
     doc = fitz.open(pdf_path)
@@ -20,5 +21,9 @@ def extract_blocks_as_images(pdf_path, output_folder, high_quality=True):
     doc.close()
 
 # 사용 예시
-output_folder = "/Users/tachyon/Downloads/img"
+output_folder = "/Users/tachyon/Downloads/img1"
+
+if not os.path.exists(output_folder):
+    os.makedirs(output_folder)
+    
 extract_blocks_as_images("/Users/tachyon/Downloads/2024 고3 수학영역.pdf", output_folder)
