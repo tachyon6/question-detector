@@ -11,7 +11,7 @@ def ensure_directory(path):
 
 def extract_text_area_coordinates(pdf_path, high_quality=True):
     doc = fitz.open(pdf_path)
-    zoom = 3 if high_quality else 1.5  # 고화질을 위한 확대 설정
+    zoom = 4 if high_quality else 1.5  # 고화질을 위한 확대 설정
     coordinates = {}
 
     for page_number in range(len(doc)):
