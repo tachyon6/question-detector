@@ -84,6 +84,9 @@ def extract_blocks_as_images(pdf_path, output_folder, coordinates, high_quality=
                     # 다음 블록이 너무 멀리 떨어져 있으면 배제
                     if current_question_blocks and (block["bbox"][1] - last_block_bottom) > block_distance_threshold:
                         break
+                        
+                    if current_question_blocks and (last_block_bottom - block["bbox"][3]) > block_distance_threshold:
+                        continue
 
                     current_question_blocks.append(block)
                     last_block_bottom = block["bbox"][3]
