@@ -28,12 +28,11 @@ payload = {
         {
             "role": "user",
             "content": [
-                {"type": "text", "text": "이 이미지가 뭐라고 적혀있는지 받아적어줘. 한 문제만. 수식이랑 줄바꿈만 레이텍 문법을 활용해줘. 어떤 조건들이 이미지 전체 너비만한 가로 길이의 박스 안에 있으면, box 태그로 감싸줘."},
+                {"type": "text", "text": "이 이미지가 뭐라고 적혀있는지 받아적어줘. 한 문제만. 수식이랑 줄바꿈만 레이텍 문법을 활용해줘."},
                 {
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:image/jpeg;base64,{base64_image}",
-                        "detail": "high"
                     },
                 },
             ],
