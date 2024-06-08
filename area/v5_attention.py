@@ -39,7 +39,7 @@ def extract_text_area_coordinates(pdf_path, high_quality=True):
 
 def extract_blocks_as_images(pdf_path, output_folder, coordinates, high_quality=True, block_distance_threshold=200):
     doc = fitz.open(pdf_path)
-    zoom = 2 if high_quality else 1  # 고화질을 위한 확대 설정
+    zoom = 4 if high_quality else 1  # 고화질을 위한 확대 설정
     question_pattern = re.compile(r"^\d+\.")
     question_number = 1
 
@@ -59,6 +59,7 @@ def extract_blocks_as_images(pdf_path, output_folder, coordinates, high_quality=
             if page_number == 0:
                 print(f"Page {page_number} has coordinates: (min_x: {min_x}, min_y: {min_y}, max_x: {max_x}, max_y: {max_y})")
             current_question_blocks = []
+            image_blocks = []
             last_question_number = question_number
             last_block_bottom = 0
 
@@ -72,10 +73,11 @@ def extract_blocks_as_images(pdf_path, output_folder, coordinates, high_quality=
 
                     if question_pattern.match(block_text.strip()):
                         if current_question_blocks:
-                            save_question_image(current_question_blocks, page, zoom, output_folder, page_number, last_question_number, base_filename, contains_a_or_b)
+                            save_question_image(current_question_blocks, image_blocks, page, zoom, output_folder, page_number, last_question_number, base_filename, contains_a_or_b)
                             last_question_number = question_number
                             question_number += 1
                             current_question_blocks = []
+                            image_blocks = []
 
                     if current_question_blocks and (block["bbox"][1] - last_block_bottom) > block_distance_threshold:
                         break
@@ -84,10 +86,12 @@ def extract_blocks_as_images(pdf_path, output_folder, coordinates, high_quality=
                         continue
 
                     current_question_blocks.append(block)
+                    if 'image' in block:
+                        image_blocks.append(block)
                     last_block_bottom = block["bbox"][3]
 
             if current_question_blocks:
-                save_question_image(current_question_blocks, page, zoom, output_folder, page_number, last_question_number, base_filename, contains_a_or_b)
+                save_question_image(current_question_blocks, image_blocks, page, zoom, output_folder, page_number, last_question_number, base_filename, contains_a_or_b)
                 for i, block in enumerate(current_question_blocks):
                     save_single_block_image(block, page, zoom, output_folder, page_number, i)
 
@@ -104,31 +108,52 @@ def save_single_block_image(block, page, zoom, output_folder, page_number, block
     img.save(f"{log_folder}/page_{page_number}_block_{block_number}.png")
     print(f"Block {block_number} on page {page_number} has coordinates: (min_x: {min_x}, min_y: {min_y}, max_x: {max_x}, max_y: {max_y})")
 
-def save_question_image(blocks, page, zoom, output_folder, page_number, question_number, base_filename, contains_a_or_b):
+def save_image_block_image(image_blocks, page, zoom, output_folder, question_filename):
+    if not image_blocks:
+        return
+
+    min_x = min(block["bbox"][0] for block in image_blocks)
+    max_x = max(block["bbox"][2] for block in image_blocks)
+    min_y = min(block["bbox"][1] for block in image_blocks)
+    max_y = max(block["bbox"][3] for block in image_blocks)
+    rect = fitz.Rect(min_x, min_y, max_x, max_y)
+    pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), clip=rect)
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    ensure_directory(output_folder)
+    img_folder = os.path.join(output_folder, "img")
+    ensure_directory(img_folder)
+    img.save(f"{img_folder}/{question_filename}_img.png")
+    print(f"Image for {question_filename} saved with coordinates: (min_x: {min_x}, min_y: {min_y}, max_x: {max_x}, max_y: {max_y})")
+
+def save_question_image(blocks, image_blocks, page, zoom, output_folder, page_number, question_number, base_filename, contains_a_or_b):
     min_x = min(block["bbox"][0] for block in blocks)
     max_x = max(block["bbox"][2] for block in blocks)
-    min_y = min(block["bbox"][1] for block in blocks)
-    max_y = max(block["bbox"][3] for block in blocks)
+    min_y = min(block["bbox"][1] for block in blocks)-10
+    max_y = max(block["bbox"][3] for block in blocks)+10
     rect = fitz.Rect(min_x, min_y, max_x, max_y)
     pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), clip=rect)
     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
     ensure_directory(output_folder)
     
     # 파일명 지정 로직 추가
-    question_label = f"{question_number:02}"  # 두 자리 숫자 형식으로 변환
+    if question_number >= 31 and question_number <= 38:
+        question_number = (question_number - 31) + 23
+        question_label = f"{question_number:02}B"
+    elif question_number >= 39 and question_number <= 46:
+        question_number = (question_number - 39) + 23
+        question_label = f"{question_number:02}C"
+    elif question_number >= 23 and question_number <= 30:
+        question_label = f"{question_number:02}A"
+    else:
+        question_label = f"{question_number:02}"
+    
     if contains_a_or_b:
         filename = f"{base_filename}{question_label}.png"
     else:
-        if question_number >= 23 and question_number <= 30:
-            question_label += 'A'
-        elif question_number >= 31 and question_number <= 38:
-            question_label += 'B'
-        elif question_number >= 39 and question_number <= 46:
-            question_label += 'C'
-        
         filename = f"{base_filename}{question_label}.png"
     
     img.save(f"{output_folder}/{filename}")
+    save_image_block_image(image_blocks, page, zoom, output_folder, f"{base_filename}{question_label}")
 
 # 사용 예시
 output_folder = "/Users/tachyon/Downloads/2406"
